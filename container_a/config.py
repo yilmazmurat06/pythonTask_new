@@ -1,7 +1,5 @@
 import os
 
-# config dosyası
-
 class Config:
     def __init__(self):
         self.rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
