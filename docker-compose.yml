@@ -54,7 +54,7 @@ services:
       - "8080:8080"
     
     depends_on:
-      rabbit_mq:
+      rabbitmq:
         condition: service_healthy
     
     environment:

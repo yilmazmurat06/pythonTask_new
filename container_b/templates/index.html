@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interpol Red Notice - Tracking System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 2em; margin-bottom: 5px; }
+        .stat-card p { opacity: 0.9; }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .updates-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .update-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.5s;
+        }
+        .update-item.alert {
+            background: #fff3cd;
+            border-left-color: #ff6b6b;
+        }
+        .update-item.alert::before {
+            content: "🚨 UPDATE ALARM";
+            display: block;
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔴 Interpol Red Notice</h1>
+        <p class="subtitle">Real Time Most Wanted List</p>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3 id="totalCount">0</h3>
+                <p>Total Saved</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="updateCount">0</h3>
+                <p>Total Updates</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="lastUpdate">-</h3>
+                <p>Last Updated</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Recent Updates</h2>
+            <div id="updatesList" class="updates-list">
+                <div class="loading">Loading Data...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 All Items</h2>
+            <div id="noticesTable"></div>
+        </div>
+    </div>
+    
+    <script>
+        // verileri güncelle
+        async function fetchData() {
+            try {
+                // son işlemleri getir
+                const updatesRes = await fetch('/api/updates');
+                const updates = await updatesRes.json();
+                displayUpdates(updates);
+                
+                // tüm kayıtları getir
+                const noticesRes = await fetch('/api/notices');
+                const notices = await noticesRes.json();
+                displayNotices(notices);
+                
+                // istatistikleri güncelle
+                updateStats(notices, updates);
+                
+            } catch (error) {
+                console.error('Veri çekme hatası:', error);
+            }
+        }
+        
+        function displayUpdates(updates) {
+            const container = document.getElementById('updatesList');
+            
+            if (updates.length === 0) {
+                container.innerHTML = '<div class="loading">No Updates Yet</div>';
+                return;
+            }
+            
+            container.innerHTML = updates.map(update => `
+                <div class="update-item ${update.alert ? 'alert' : ''}">
+                    <strong>${update.name}</strong><br>
+                    <small>ID: ${update.entity_id}</small><br>
+                    <span class="timestamp">${update.timestamp}</span>
+                </div>
+            `).join('');
+        }
+        
+        function displayNotices(notices) {
+            const container = document.getElementById('noticesTable');
+            
+            if (notices.length === 0) {
+                container.innerHTML = '<p class="loading">No Data</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name Surname</th>
+                            <th>Date of Birth</th>
+                            <th>Nationalities</th>
+                            <th>First Registered</th>
+                            <th>Last Updated</th>
+                            <th>Update Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${notices.map(notice => `
+                            <tr>
+                                <td>${notice.entity_id}</td>
+                                <td>${notice.forename || ''} ${notice.name || ''}</td>
+                                <td>${notice.date_of_birth || '-'}</td>
+                                <td>${notice.nationalities || '[]'}</td>
+                                <td>${new Date(notice.first_seen).toLocaleString('tr-TR')}</td>
+                                <td>${new Date(notice.last_updated).toLocaleString('tr-TR')}</td>
+                                <td>${notice.update_count || 1}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        function updateStats(notices, updates) {
+            document.getElementById('totalCount').textContent = notices.length;
+            
+            const updateCount = notices.reduce((sum, n) => sum + (n.update_count - 1), 0);
+            document.getElementById('updateCount').textContent = updateCount;
+            
+            if (updates.length > 0) {
+                document.getElementById('lastUpdate').textContent = updates[0].timestamp;
+            }
+        }
+        
+        // İlk yükleme
+        fetchData();
+        
+        // Her 5 saniyede bir güncelle
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>

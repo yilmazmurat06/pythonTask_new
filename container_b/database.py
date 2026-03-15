@@ -61,9 +61,9 @@ class Database:
                 ''', (
                     data.get('name'),
                     data.get('forename'),
-                    data.get('date_of_birth'),
-                    json.dumps(data.get('nationalities', [])),
-                    datetime.now(),
+                    data.get('birth_date'),
+                    json.dumps(data.get('nationality', [])),
+                    datetime.now().isoformat(),
                     existing['update_count'] + 1,
                     entity_id
                 ))
@@ -81,10 +81,10 @@ class Database:
                     entity_id,
                     data.get('name'),
                     data.get('forename'),
-                    data.get('date_of_birth'),
-                    json.dumps(data.get('nationalities', [])),
-                    datetime.now(),
-                    datetime.now()
+                    data.get('birth_date'),
+                    json.dumps(data.get('nationality', [])),
+                    datetime.now().isoformat(),
+                    datetime.now().isoformat()
                 ))
 
                 connection.commit()

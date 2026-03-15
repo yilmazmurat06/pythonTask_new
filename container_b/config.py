@@ -9,4 +9,4 @@ class Config:
 
         self.db_path = os.getenv('DB_PATH', '/app/data/interpol.db')
         self.queue_name = 'interpol_queue'
-        self.web_port = 8000
+        self.web_port = int(os.getenv('WEB_PORT', 8080))
