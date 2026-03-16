@@ -50,6 +50,7 @@ class QueueConsumer:
 
             if success:
                 update_info = {
+                    'id': data.get('entity_id'),
                     'entity_id': data.get('entity_id'),
                     'name': data.get('name'),
                     'forename': data.get('forename'),

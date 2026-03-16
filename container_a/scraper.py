@@ -1,7 +1,7 @@
-import requests
 import json
 import time
 import pika
+from curl_cffi import requests
 from config import Config
 from datetime import datetime
 
@@ -49,41 +49,55 @@ class Scraper:
                 "resultPerPage": 20
             }
 
-            response = requests.get(url, headers=headers, params=params, timeout=20)
+            # curl_cffi 
+            response = requests.get(
+                url, 
+                headers=headers, 
+                params=params, 
+                impersonate="chrome116", 
+                timeout=30
+            )
 
-
-            if response.status_code == 200:
-                try:
-                    data = response.json()
-                except ValueError:
-                    print("API Response is not JSON")
-                    return []
-
-                notices = data.get('notices')
-                if notices is None:
-                    notices = data.get('_embedded', {}).get('notices', [])
-
-                for item in notices:
-                    notice = {
-                        'id': item.get('entity_id'),
-                        'name': item.get('name'),
-                        'forename': item.get('forename'),
-                        'birth_date': item.get('date_of_birth'),
-                        'nationality': item.get('nationalities', []),
-                    }
-
-                    data_list.append(notice)
-
-                print("Fetched notices count: ", len(data_list))
-
-            elif response.status_code == 403:
+            if response.status_code == 403:
                 # Bazi ortamlarda 403 alinabiliyor; ikinci bir deneme yap
                 alt_headers = dict(headers)
                 alt_headers["Referer"] = "https://www.interpol.int/en/How-we-work/Notices/Red-Notices/View-Red-Notices"
                 response = requests.get(url, headers=alt_headers, params=params, timeout=20)
 
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    print("RAW KEYS:", data.keys())
+                    print("RAW DATA:", str(data)[:300])
+                except ValueError:
+                    print("API Response is not JSON")
+                    return []
+
+                notices = data.get('_embedded', {}).get('notices', [])
+                print(f"Fetched {len(notices)} notices")
+
+                if notices is None:
+                    notices = []
+
+            elif response.status_code == 403:
+                print("API 403 Forbidden Gercek tarayici taklidi basarisiz.")
+                notices = []
             else:
                 print("API Request Failed! Status Code: ", response.status_code)
+                notices = []
+
+            for item in notices:
+                notice = {
+                    'id': item.get('entity_id'),
+                    'name': item.get('name'),
+                    'forename': item.get('forename'),
+                    'birth_date': item.get('date_of_birth'),
+                    'nationality': item.get('nationalities', []),
+                }
+
+                data_list.append(notice)
+
+            print("Fetched notices count: ", len(data_list))
 
         except Exception as e:
             print("Error fetching data from Interpol API: ", e)
