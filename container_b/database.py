@@ -88,7 +88,6 @@ class Database:
                 ))
 
                 connection.commit()
-                connection.close()
                 return True, False
 
         except Exception as e:
@@ -97,7 +96,6 @@ class Database:
             return False, False
         
         finally:
-            connection.commit()
             connection.close()
         
 

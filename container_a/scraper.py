@@ -38,17 +38,32 @@ class Scraper:
         try:
             url = "https://ws-public.interpol.int/notices/v1/red"
 
-            # bot olarak algilanmamak icin User-Agent 
+            # bot olarak algilanmamak icin User-Agent ve JSON istegi
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.interpol.int/"
+            }
+            params = {
+                "resultPerPage": 20
             }
 
-            response = requests.get(url, headers = headers)
-            
+            response = requests.get(url, headers=headers, params=params, timeout=20)
+
+
             if response.status_code == 200:
-                data = response.json()
-                
-                for item in data.get('notices', []):
+                try:
+                    data = response.json()
+                except ValueError:
+                    print("API Response is not JSON")
+                    return []
+
+                notices = data.get('notices')
+                if notices is None:
+                    notices = data.get('_embedded', {}).get('notices', [])
+
+                for item in notices:
                     notice = {
                         'id': item.get('entity_id'),
                         'name': item.get('name'),
@@ -58,8 +73,17 @@ class Scraper:
                     }
 
                     data_list.append(notice)
+
+                print("Fetched notices count: ", len(data_list))
+
+            elif response.status_code == 403:
+                # Bazi ortamlarda 403 alinabiliyor; ikinci bir deneme yap
+                alt_headers = dict(headers)
+                alt_headers["Referer"] = "https://www.interpol.int/en/How-we-work/Notices/Red-Notices/View-Red-Notices"
+                response = requests.get(url, headers=alt_headers, params=params, timeout=20)
+
             else:
-                print("API Request Failed! Status Code: ", {response.status_code})
+                print("API Request Failed! Status Code: ", response.status_code)
 
         except Exception as e:
             print("Error fetching data from Interpol API: ", e)
@@ -126,7 +150,7 @@ class Scraper:
         if self.connection:
             self.connection.close()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     config = Config()
     scraper = Scraper(config)
     scraper.run()

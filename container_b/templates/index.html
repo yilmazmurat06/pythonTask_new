@@ -188,8 +188,8 @@
             
             container.innerHTML = updates.map(update => `
                 <div class="update-item ${update.alert ? 'alert' : ''}">
-                    <strong>${update.name}</strong><br>
-                    <small>ID: ${update.entity_id}</small><br>
+                    <strong>${update.forename || ''} ${update.name || ''}</strong><br>
+                    <small>ID: ${update.id || '-'}</small><br>
                     <span class="timestamp">${update.timestamp}</span>
                 </div>
             `).join('');
@@ -222,7 +222,7 @@
                                 <td>${notice.entity_id}</td>
                                 <td>${notice.forename || ''} ${notice.name || ''}</td>
                                 <td>${notice.date_of_birth || '-'}</td>
-                                <td>${notice.nationalities || '[]'}</td>
+                                <td>${formatNationalities(notice.nationalities)}</td>
                                 <td>${new Date(notice.first_seen).toLocaleString('tr-TR')}</td>
                                 <td>${new Date(notice.last_updated).toLocaleString('tr-TR')}</td>
                                 <td>${notice.update_count || 1}</td>
@@ -241,6 +241,21 @@
             
             if (updates.length > 0) {
                 document.getElementById('lastUpdate').textContent = updates[0].timestamp;
+            }
+        }
+
+        function formatNationalities(value) {
+            if (!value) {
+                return '[]';
+            }
+            if (Array.isArray(value)) {
+                return value.join(', ');
+            }
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
+            } catch (e) {
+                return String(value);
             }
         }
         

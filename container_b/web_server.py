@@ -14,7 +14,6 @@ db = Database(config.db_path)
 updates = []
 MAX_UPDATES = 50
 
-# rabbitmq listener class 
 class QueueConsumer:
     def __init__(self, config: Config, db: Database):
         self.config = config
@@ -37,6 +36,7 @@ class QueueConsumer:
 
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
+
         self.channel.queue_declare(queue = self.config.queue_name, durable=True)
         print("Listening the queue...")
 
@@ -50,7 +50,7 @@ class QueueConsumer:
 
             if success:
                 update_info = {
-                    'id': data.get('entity_id'),
+                    'entity_id': data.get('entity_id'),
                     'name': data.get('name'),
                     'forename': data.get('forename'),
                     'birth_date': data.get('birth_date'),
@@ -74,11 +74,11 @@ class QueueConsumer:
 
         except Exception as e:
             print("ERROR: ", e)
-            ch.basic_ack(delivery_tag=method.delivery_tag)  # mesaj alınmadı, kuyruğa geri koy                
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)  # mesaj alınmadı, kuyruğa geri koy                
 
     # queue dinlemeye başlar
     def start_consuming(self):
-        self.channel.basic_qos(1, prefetch_size=0, prefetch_count = 1)   # aynı anda sadece 1 tane veriyi işleyecek, biri bitmeden öbürüne geçme
+        self.channel.basic_qos(prefetch_count=1)   # aynı anda sadece 1 tane veriyi işleyecek, biri bitmeden öbürüne geçme
         self.channel.basic_consume(
             queue = self.config.queue_name,
             on_message_callback = self.callback     # mesaj gelince çalışacak fonksiyon
