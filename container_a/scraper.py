@@ -14,7 +14,7 @@ class Scraper:
 
     # RabbitMQ'ya bağlanmak için
     def connect_rabbitmq(self):
-        # kimlik doğrulama bilgileri - RabbitMQ'ya bağlanmak için gereken kullanıcı adı ve şifre
+        # kimlik doğrulama bilgileri
         credentials = pika.PlainCredentials(self.config.rabbitmq_user, 
                                             self.config.rabbitmq_pass)
         
@@ -46,7 +46,7 @@ class Scraper:
                 "Referer": "https://www.interpol.int/"
             }
             params = {
-                "resultPerPage": 20
+                "resultPerPage": 50
             }
 
             # curl_cffi 
@@ -59,7 +59,7 @@ class Scraper:
             )
 
             if response.status_code == 403:
-                # Bazi ortamlarda 403 alinabiliyor; ikinci bir deneme yap
+                #ikinci bir deneme yap
                 alt_headers = dict(headers)
                 alt_headers["Referer"] = "https://www.interpol.int/en/How-we-work/Notices/Red-Notices/View-Red-Notices"
                 response = requests.get(url, headers=alt_headers, params=params, timeout=20)
@@ -152,8 +152,13 @@ class Scraper:
                     self.send_to_rabbitmq_queue(notice)
 
                 print(datetime.now(), "\tCompleted. All notices are fetched")
-                time.sleep(self.config.scrape_interval)
+                
+                if self.connection and self.connection.is_open:
+                    self.connection.sleep(self.config.scrape_interval)
+                else:
+                    time.sleep(self.config.scrape_interval)
 
+                time.sleep(self.config.scrape_interval) 
             except KeyboardInterrupt:
                 print("Ctrl+C signal detected. Stopped")
                 break

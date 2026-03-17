@@ -3,16 +3,15 @@ version: '3.8'
 # rabbit-mq bize kuyruk yapısını sağlar. uygulamalar arasında güvenli bir şekilde veri iletişimini sağlar.
 # ara yazılımdır (middleware)
 
-# rabbitmq, amqp protokolünü implement eder.
 
 services:
   rabbitmq:
-    image: rabbitmq:3-management  # docker-hub içerisinden hazır image gelir. yönetim paketi olan image
-    container_name: rabbitmq_container  #container adı
+    image: rabbitmq:3-management # docker-hub içerisinden hazır image gelir. yönetim paketi olan image
+    container_name: rabbitmq_container #container adı
 
     ports:
       # host makine port : container port
-      - "5672:5672"   # AMQP (advanced messaging queuing protocol) için. http benzeri - mesajlaşma için kullanılır
+      - "5672:5672" # AMQP (advanced messaging queuing protocol) için. http benzeri - mesajlaşma için kullanılır
       - "15672:15672" # web arayüzü için - yönetim paneline gider
 
     # rabbit-mq kullanıcı adı-şifre 
@@ -22,29 +21,29 @@ services:
 
     # queue sistemi hazır mı değil mi onu kontrol eder
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s    # ping interval
-      timeout: 5s      # cevap bekleme süresi
-      retries: 5       # deneme sayısı - fail ederse->çalışmıyor
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s # ping interval
+      timeout: 5s # cevap bekleme süresi
+      retries: 5 # deneme sayısı - fail ederse->çalışmıyor
       start_period: 30s
 
   # ----CONTAINER_A----
   scraper:
-    build: ./container_a    # container_a dosyasındaki Dockerfile ile kendisini build eder
+    build: ./container_a # container_a dosyasındaki Dockerfile ile kendisini build eder
     container_name: scraper_container
     depends_on:
       rabbitmq:
-        condition: service_healthy    # scraper, rabbit_mq hazır olana kadar başlamaz. health check başarılı olmalı
-    
+        condition: service_healthy # scraper, rabbit_mq hazır olana kadar başlamaz. health check başarılı olmalı
+
     # container_a nın kullanacağı variable listesi
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
-      SCRAPE_INTERVAL: ${SCRAPE_INTERVAL}   # ne zamanda bir scrape yapacağım
-    
-    restart: unless-stopped   # çökerse otomatik yeniden başlat
+      SCRAPE_INTERVAL: ${SCRAPE_INTERVAL} # ne zamanda bir scrape yapacağım
+
+    restart: unless-stopped # çökerse otomatik yeniden başlat
 
   # ----CONTAINER_B----
   webserver:
@@ -52,11 +51,11 @@ services:
     container_name: webserver
     ports:
       - "8080:8080"
-    
+
     depends_on:
       rabbitmq:
         condition: service_healthy
-    
+
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
@@ -65,7 +64,7 @@ services:
       DB_PATH: ${DB_PATH}
 
     volumes:
-      - ./data:/app/data    # verilerin kalıcı olması için önemlidir
+      - ./data:/app/data # verilerin kalıcı olması için önemlidir
       # host makine klasörü : container klasörü
       # veritabanı container silinse dahi kalır
 
