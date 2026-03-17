@@ -125,5 +125,5 @@ if __name__ == '__main__':
     thread = threading.Thread(target=start_queue_consumer, daemon=True)
     thread.start()
 
-    print("Initializing web server: http://0.0.0.0:", config.web_port)
+    print("Initializing web server: http://0.0.0.0:",config.web_port)
     app.run(host='0.0.0.0', port = config.web_port)
