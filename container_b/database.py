@@ -49,7 +49,7 @@ class Database:
             entity_id = data.get('entity_id')
 
             # ? sql injection yapılmasını engeller
-            cursor.execute('SELECT id, update_count FROM interpol_notices WHERE entity_id = ?', (entity_id))
+            cursor.execute('SELECT id, update_count FROM interpol_notices WHERE entity_id = ?', {entity_id: entity_id})
             existing = cursor.fetchone()
 
             if existing:

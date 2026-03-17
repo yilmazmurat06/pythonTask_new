@@ -9,4 +9,4 @@ class Config:
         self.scrape_interval = int(os.getenv('SCRAPE_INTERVAL', 300))
         self.queue_name = 'interpol_queue'
 
-# env dosyasında ilgili bilgiler yoksa ikinci parametreleri kullanır (os.getenv)
+# env dosyasında ilgili bilgiler yoksa ikinci parametreleri kullan

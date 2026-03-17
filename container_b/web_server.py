@@ -79,7 +79,11 @@ class QueueConsumer:
 
     # queue dinlemeye başlar
     def start_consuming(self):
+        if self.channel is None:
+            raise Exception("Channel is not initialized. Call connect() first.")
+        
         self.channel.basic_qos(prefetch_count=1)   # aynı anda sadece 1 tane veriyi işleyecek, biri bitmeden öbürüne geçme
+        
         self.channel.basic_consume(
             queue = self.config.queue_name,
             on_message_callback = self.callback     # mesaj gelince çalışacak fonksiyon
