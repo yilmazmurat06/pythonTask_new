@@ -42,6 +42,21 @@ class Scraper:
         if image and image not in urls:
             urls.append(image)
 
+        # Fallback: scan any link entry that looks image-related.
+        for key, value in links.items():
+            if not isinstance(value, dict):
+                continue
+            href = value.get("href")
+            if not href:
+                continue
+            key_l = str(key).lower()
+            href_l = str(href).lower()
+            if any(token in key_l for token in ["image", "thumbnail", "photo"]) or any(
+                token in href_l for token in ["image", "thumbnail", "photo"]
+            ):
+                if href not in urls:
+                    urls.append(href)
+
         return urls
     
     def normalize_notice(self, item:dict) -> dict:
@@ -124,6 +139,8 @@ class Scraper:
                     normalized = self.normalize_notice(item)
                     if normalized.get("entity_id"):
                         data_list.append(normalized)
+                        if normalized.get("photo_urls"):
+                            print("Photo link found for", normalized.get("entity_id"))
 
                 fetched_pages += 1
                 page += 1

@@ -8,6 +8,9 @@ services:
   rabbitmq:
     image: rabbitmq:3-management # docker-hub içerisinden hazır image gelir. yönetim paketi olan image
     container_name: rabbitmq_container #container adı
+    user: "0:0"
+    command: >
+      sh -c "chown -R rabbitmq:rabbitmq /var/lib/rabbitmq && exec docker-entrypoint.sh rabbitmq-server"
 
     ports:
       # host makine port : container port
@@ -18,6 +21,9 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
     # queue sistemi hazır mı değil mi onu kontrol eder
     healthcheck:
@@ -87,7 +93,7 @@ services:
       - minio_data:/data
     
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:9000/minio/health/live || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -150,5 +156,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  rabbitmq_data:
   postgres_data:
   minio_data:

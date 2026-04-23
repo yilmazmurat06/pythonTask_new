@@ -47,7 +47,11 @@ class Consumer:
 	def _upload_photo(self, entity_id: str, photo_url: str, is_primary: bool, person_id: int):
 		try:
 			response = requests.get(photo_url, timeout=30)
-			if response.status_code != 200 or not response.content:
+			if response.status_code != 200:
+				print("Photo fetch non-200:", response.status_code, photo_url)
+				return
+			if not response.content:
+				print("Photo fetch empty content:", photo_url)
 				return
 
 			content_type = response.headers.get("Content-Type", "image/jpeg")
