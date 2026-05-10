@@ -111,7 +111,43 @@
             object-fit: cover;
             border: 1px solid var(--line);
             background: #e2e8f0;
+            cursor: zoom-in;
+            transition: transform 0.15s ease;
         }
+        .photo:hover { transform: scale(1.08); }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            cursor: zoom-out;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-image {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+            background: #fff;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .modal-close:hover { background: rgba(255, 255, 255, 0.3); }
 
         .pill {
             display: inline-block;
@@ -216,6 +252,11 @@
             <div id="updatesList" class="muted">Loading...</div>
         </div>
     </div>
+
+    <div id="photoModal" class="modal-overlay">
+        <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+        <img id="modalImage" class="modal-image" alt="Wanted person photo">
+    </div>
     
     <script>
         const state = {
@@ -270,7 +311,7 @@
 
             tbody.innerHTML = items.map((x) => {
                 const criminal = x.has_criminal_record ? "<span class='pill'>YES</span>" : "<span class='muted'>NO</span>";
-                const photo = x.photo_url ? "<img class='photo' src='" + x.photo_url + "' alt='photo'>" : "<span class='muted'>N/A</span>";
+                const photo = x.photo_url ? "<img class='photo' src='" + x.photo_url + "' data-full='" + x.photo_url + "' alt='photo'>" : "<span class='muted'>N/A</span>";
 
                 return "<tr>" +
                     "<td>" + (x.entity_id || "-") + "</td>" +
@@ -351,6 +392,29 @@
                 }
                 refreshAll();
             });
+        });
+
+        const photoModal = document.getElementById("photoModal");
+        const modalImage = document.getElementById("modalImage");
+
+        function openPhotoModal(src) {
+            modalImage.src = src;
+            photoModal.classList.add("open");
+        }
+        function closePhotoModal() {
+            photoModal.classList.remove("open");
+            modalImage.src = "";
+        }
+
+        document.getElementById("tableBody").addEventListener("click", (e) => {
+            const img = e.target.closest("img.photo");
+            if (img) openPhotoModal(img.dataset.full || img.src);
+        });
+        photoModal.addEventListener("click", (e) => {
+            if (e.target === photoModal || e.target.id === "modalClose") closePhotoModal();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && photoModal.classList.contains("open")) closePhotoModal();
         });
 
         refreshAll();

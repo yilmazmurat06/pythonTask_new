@@ -3,7 +3,7 @@ import time
 from io import BytesIO
 
 import pika
-import requests
+from curl_cffi import requests
 from minio import Minio
 
 from config import Config
@@ -46,7 +46,12 @@ class Consumer:
 
 	def _upload_photo(self, entity_id: str, photo_url: str, is_primary: bool, person_id: int):
 		try:
-			response = requests.get(photo_url, timeout=30)
+			headers = {
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"Accept": "image/avif,image/webp,image/*,*/*;q=0.8",
+				"Referer": "https://www.interpol.int/",
+			}
+			response = requests.get(photo_url, headers=headers, impersonate="chrome116", timeout=30)
 			if response.status_code != 200:
 				print("Photo fetch non-200:", response.status_code, photo_url)
 				return
