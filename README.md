@@ -7,9 +7,15 @@
 ---
 
 ## 📌 Proje Hakkında
-Bu proje, Interpol'ün uluslararası "Kırmızı Bülten (Red Notice)" veritabanını düzenli periyotlarla tarayan, elde ettiği arananlar listesini asenkron bir mesaj kuyruğu (Message Broker) üzerinden güvenle geçirerek yerel veri tabanına işleyen ve web üzerinden görselleştiren bir **Mikroservis (Microservices)** uygulamasıdır. 
+Bu proje, Interpol'ün uluslararası "Kırmızı Bülten (Red Notice)" veritabanını düzenli periyotlarla tarayan, elde ettiği arananlar listesini asenkron bir mesaj kuyruğu (Message Broker) üzerinden güvenle geçirerek **PostgreSQL** veri tabanına işleyen ve web üzerinden görselleştiren bir **Mikroservis (Microservices)** uygulamasıdır.
 
-Sistem dış etkenlere karşı dayanıklı, ölçeklenebilir ve **Docker** ile tamamen konteynerize edilmiş bir mimariyle tasarlanmıştır.
+Sistem dış etkenlere karşı dayanıklı, ölçeklenebilir ve **Docker** ile tamamen konteynerize edilmiş bir mimariyle tasarlanmıştır. Fotoğraflar **MinIO (S3 uyumlu)** obje deposunda saklanır ve web sunucusu üzerinden proxy edilir.
+
+### 🧭 Mimari Diyagramlar
+
+![Sistem mimarisi](image1.png)
+
+![Veritabani semasi](image2.png)
 
 ---
 
@@ -24,12 +30,21 @@ Görevi yalnızca Interpol sisteminden veri koparmaktır.
 - Gelen ham veriyi filtreleyip sadece gerekli bilgileri paketler ve **RabbitMQ**'ya teslim eder. İşi bitince bir sonraki tarama süresine kadar beklemeye geçer.
 
 ### 2- RabbitMQ: Mesaj Kuyruğu (Message Broker)
-**Container A** ile **Container B** arasındaki köprü görevini üstlenir. Scraper'ın çektiği yoğun verileri geçici belleğinde depolar ve yığın halde gelmesini engelleyerek alıcı taraf olan Web Sunucusuna verileri tek tek, güvenli bir şekilde sevk eder.
+**Container A** ile **Container B** arasındaki köprü görevini üstlenir. Scraper'ın çektiği yoğun verileri geçici belleğinde depolar ve yığın halde gelmesini engelleyerek alıcı taraf olan Consumer servisine verileri tek tek, güvenli bir şekilde sevk eder.
 
-### 3- Container B: İşleyici ve Sunucu (Web Server & DB)
-Verileri okuyan ve son kullanıcıya ulaştıran beynidir. İçerisinde iki farklı işleyici aynı anda asenkron olarak çalışır:
-- **Queue Consumer (Arka Plan Dinleyicisi):** RabbitMQ kuyruğunu pür dikkat dinler. Yeni veri geldiğinde alır ve anında kalıcı **SQLite** veritabanına ekler. Eğer kişi zaten eşleşiyorsa üzerine yazar ve güncelleme sayısını artırır.
-- **Flask Web Server:** Kullanıcılara modern bir arayüz (Dashboard) sunar. Tarayıcınızı sayfada açık bıraktığınızda arka plandaki JavaScript kodları, sayfayı yenilemenize gerek kalmadan saniyede bir Flask API'sine istek gönderir ve listeyi gerçek zamanlı (Real-time) olarak ekranınıza yansıtır.
+### 3- Container B: İşleyici (Queue Consumer)
+RabbitMQ kuyruğunu pür dikkat dinler. Yeni veri geldiğinde alır ve anında kalıcı **PostgreSQL** veritabanına ekler. Eğer kişi zaten eşleşiyorsa üzerine yazar ve güncelleme sayısını artırır.
+- Fotoğrafları Interpol üzerinden indirir ve **MinIO** obje deposuna yükler.
+- Her ingest işlemi için **ingest_event** kaydı üretir.
+
+### 4- PostgreSQL: Kalıcı Veri Tabanı
+İşlenmiş kişi bilgilerini, arama filtrelerini ve güncelleme geçmişini tutar. Arayüzdeki filtreleme ve sıralama işlemleri SQL tarafında yapılır.
+
+### 5- Container C: Web Sunucusu (Flask API + Dashboard)
+Kullanıcılara modern bir arayüz (Dashboard) sunar. Filtreleme, sıralama ve sayfalama işlemleri backend API üzerinden yapılır.
+- `/api/notices`: Sunucu tarafı filtreleme ve sayfalama.
+- `/api/updates`: Son ingest olayları.
+- `/api/photos/<entity_id>`: MinIO'dan fotoğraf proxy.
 
 ---
 
@@ -38,7 +53,8 @@ Verileri okuyan ve son kullanıcıya ulaştıran beynidir. İçerisinde iki fark
 - **Docker Compose** *(Konteyner Yönetimi & Orkestrasyon)* 🐳
 - **RabbitMQ** *(Mesaj Kuyruğu & AMQP Protokolü)* 🐇
 - **Flask** *(Web Framework & REST API)* 🌶️
-- **SQLite** *(İlişkisel ve Kalıcı Veritabanı)* 🗄️
+- **PostgreSQL 16** *(İlişkisel ve Kalıcı Veritabanı)* 🐘
+- **MinIO** *(S3 Uyumlu Obje Deposu)* 🪣
 - **curl_cffi** *(Güvenlik Duvarı Bypass ve Bot Gizleme)* 🥷 
 - **HTML5, CSS3, Vanilla JS** *(Dinamik Ön-yüz Tasarımı)* 🎨
 
@@ -57,6 +73,8 @@ docker-compose up -d --build
 2- Servisler `Healthy` (Sağlıklı) durumuna geldiğinde tarayıcınızdan aşağıdaki adreslere gidebilirsiniz:
 * 🌐 **Canlı Web İzleme Paneli (Dashboard):** [http://localhost:8080](http://localhost:8080)
 * ⚙️ **RabbitMQ Geliştirici Yönetim Ekranı:** [http://localhost:15672](http://localhost:15672)  *(Varsayılan kullanıcı/şifre: `guest` / `guest`)*
+* 🪣 **MinIO Console:** [http://localhost:9001](http://localhost:9001) *(Kullanıcı/şifre `.env` ile belirlenir)*
+* 🧰 **MinIO S3 API:** [http://localhost:9000](http://localhost:9000)
 
 3- Sistemi tamamen durdurmak ve temizlemek için:
 ```bash
@@ -71,7 +89,8 @@ Sistem bileşenleri kofigürasyonlarına göre şu şekilde ayrılmıştır:
 
 ```text
 ├── docker-compose.yml       # Servis bağlarını, Volume'ları ve Ağları kuran Orkestratör dosya.
-├── data/                    # Veritabanının konteyner kapansa dahi silinmemesi için (Volume) klasör.
+├── sql/                     # PostgreSQL ilk kurulum şeması.
+│   └── init.sql
 │
 ├── container_a/             # 🕵️‍♂️ (SCRAPER SERVİSİ)
 │   ├── scraper.py           # Interpol'den veri çeken ve kuyruğa yollayan bot yazılımı.
@@ -79,13 +98,20 @@ Sistem bileşenleri kofigürasyonlarına göre şu şekilde ayrılmıştır:
 │   ├── Dockerfile           # Servis A'nın yaratım adımları.
 │   └── requirements.txt     # Botun kullanacağı python paketleri listesi.
 │
-└── container_b/             # 🖥️ (WEB VE VERİTABANI SERVİSİ)
-    ├── web_server.py        # Kuyruktaki verileri karşılayan dinleyici ve Flask web sunucusu.
-    ├── database.py          # SQLite veritabanı yönetim ve güncelleme kurallarının yazıldığı dosya.
-    ├── config.py            # Servis B ağ, veritabanı yolları ve yayın portu (8080) ayarları.
-    ├── Dockerfile           # Servis B'nin yaratım adımları.
-    ├── requirements.txt     # Web sunucusu python paketleri.
-    └── templates/           
-        └── index.html       # Kullanıcının ekranda gördüğü Real-Time web arayüz tasarımı.
+├── container_b/             # 🧩 (CONSUMER SERVİSİ)
+│   ├── consumer.py          # RabbitMQ dinleyicisi ve MinIO yükleyicisi.
+│   ├── database.py          # PostgreSQL upsert ve ilişki yönetimi.
+│   ├── config.py            # RabbitMQ, PostgreSQL, MinIO ayarları.
+│   ├── Dockerfile           # Servis B'nin yaratım adımları.
+│   └── requirements.txt     # Consumer için python paketleri.
+│
+└── container_c/             # 🖥️ (WEB API & DASHBOARD)
+  ├── web_server.py        # Flask API ve dashboard servisi.
+  ├── database.py          # Okuma sorguları ve filtreleme.
+  ├── config.py            # PostgreSQL/MinIO ve yayın portu (8080) ayarları.
+  ├── Dockerfile           # Servis C'nin yaratım adımları.
+  ├── requirements.txt     # Web servisi python paketleri.
+  └── templates/
+    └── index.html       # Kullanıcının gördüğü dashboard arayüzü.
 ```
 
