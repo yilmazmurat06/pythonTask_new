@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,16 +18,22 @@
             --line: #e2e8f0;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
             background: radial-gradient(circle at 15% 20%, #1d4ed8 0, transparent 40%),
-                        radial-gradient(circle at 85% 15%, #0ea5e9 0, transparent 45%),
-                        linear-gradient(135deg, var(--bg1), var(--bg2));
+                radial-gradient(circle at 85% 15%, #0ea5e9 0, transparent 45%),
+                linear-gradient(135deg, var(--bg1), var(--bg2));
             min-height: 100vh;
             color: var(--text);
             padding: 20px;
         }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -35,10 +42,12 @@
             box-shadow: 0 18px 45px rgba(2, 6, 23, 0.35);
             padding: 24px;
         }
+
         h1 {
             font-size: 2rem;
             margin-bottom: 8px;
         }
+
         .subtitle {
             color: var(--muted);
             margin-bottom: 18px;
@@ -51,7 +60,9 @@
             margin-bottom: 14px;
         }
 
-        .filters input, .filters select, .filters button {
+        .filters input,
+        .filters select,
+        .filters button {
             padding: 10px;
             border: 1px solid var(--line);
             border-radius: 10px;
@@ -83,21 +94,30 @@
             padding: 14px;
         }
 
-        .card h3 { font-size: 1.5rem; margin-bottom: 4px; }
-        .card p { color: var(--muted); }
-        
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .card p {
+            color: var(--muted);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 12px;
         }
-        th, td {
+
+        th,
+        td {
             text-align: left;
             border-bottom: 1px solid var(--line);
             padding: 10px;
             vertical-align: top;
             font-size: 0.92rem;
         }
+
         th {
             background: #f8fafc;
             cursor: pointer;
@@ -114,7 +134,26 @@
             cursor: zoom-in;
             transition: transform 0.15s ease;
         }
-        .photo:hover { transform: scale(1.08); }
+
+        .photo:hover {
+            transform: scale(1.08);
+        }
+
+        .photo-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: zoom-in;
+        }
+
+        .photo-trigger:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: 10px;
+        }
 
         .modal-overlay {
             position: fixed;
@@ -126,7 +165,11 @@
             z-index: 1000;
             cursor: zoom-out;
         }
-        .modal-overlay.open { display: flex; }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
         .modal-image {
             max-width: 90vw;
             max-height: 90vh;
@@ -134,6 +177,7 @@
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
             background: #fff;
         }
+
         .modal-close {
             position: absolute;
             top: 20px;
@@ -147,7 +191,10 @@
             font-size: 1.2rem;
             cursor: pointer;
         }
-        .modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
 
         .pill {
             display: inline-block;
@@ -191,6 +238,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Interpol Red Notice Dashboard</h1>
@@ -209,7 +257,7 @@
             <input id="dobTo" type="date">
             <button id="applyFilters">Apply</button>
         </div>
-        
+
         <div class="stats">
             <div class="card">
                 <h3 id="totalCount">0</h3>
@@ -257,7 +305,7 @@
         <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
         <img id="modalImage" class="modal-image" alt="Wanted person photo">
     </div>
-    
+
     <script>
         const state = {
             page: 1,
@@ -311,7 +359,9 @@
 
             tbody.innerHTML = items.map((x) => {
                 const criminal = x.has_criminal_record ? "<span class='pill'>YES</span>" : "<span class='muted'>NO</span>";
-                const photo = x.photo_url ? "<img class='photo' src='" + x.photo_url + "' data-full='" + x.photo_url + "' alt='photo'>" : "<span class='muted'>N/A</span>";
+                const photo = x.photo_url ? "<button type='button' class='photo-trigger' data-full='" + x.photo_url + "' aria-label='Open photo'>" +
+                    "<img class='photo' src='" + x.photo_url + "' alt='photo'>" +
+                    "</button>" : "<span class='muted'>N/A</span>";
 
                 return "<tr>" +
                     "<td>" + (x.entity_id || "-") + "</td>" +
@@ -407,8 +457,10 @@
         }
 
         document.getElementById("tableBody").addEventListener("click", (e) => {
-            const img = e.target.closest("img.photo");
-            if (img) openPhotoModal(img.dataset.full || img.src);
+            const trigger = e.target.closest(".photo-trigger");
+            if (!trigger) return;
+            const img = trigger.querySelector("img.photo");
+            openPhotoModal(trigger.dataset.full || (img && img.src) || "");
         });
         photoModal.addEventListener("click", (e) => {
             if (e.target === photoModal || e.target.id === "modalClose") closePhotoModal();
@@ -421,4 +473,5 @@
         setInterval(refreshAll, 7000);
     </script>
 </body>
+
 </html>

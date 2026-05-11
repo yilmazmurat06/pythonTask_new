@@ -46,7 +46,8 @@ class Database:
 		with self.get_connection() as conn:
 			with conn.cursor(cursor_factory=RealDictCursor) as cursor:
 				cursor.execute(sql, params)
-				return int(cursor.fetchone()["total"])
+				row = cursor.fetchone()
+				return int(row["total"]) if row else 0
 
 	def get_notices(self, filters, page, page_size, sort_by, sort_order):
 		where_sql, params = self._build_where(filters)

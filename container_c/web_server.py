@@ -57,7 +57,7 @@ def get_updates():
     return jsonify(db.get_recent_updates(limit=50))
 
 
-@app.route('/api/photos/<entity_id>')
+@app.route('/api/photos/<path:entity_id>')
 def proxy_photo(entity_id):
     photo = db.get_primary_photo(entity_id)
     if not photo:

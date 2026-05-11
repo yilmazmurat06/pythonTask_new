@@ -27,7 +27,8 @@ class Database:
             """,
             (iso_code, iso_code),
         )
-        return cursor.fetchone()[0]
+        result = cursor.fetchone()
+        return result[0] if result else -1
 
     def _get_or_create_eye_color(self, cursor, code: str) -> int:
         cursor.execute(
@@ -94,7 +95,8 @@ class Database:
                             data.get("sex_id"),
                         ),
                     )
-                    person_id = cursor.fetchone()[0]
+                    inserted = cursor.fetchone()
+                    person_id = inserted[0] if inserted else -1
                     is_update = False
 
                 cursor.execute("DELETE FROM wanted_person_nationality WHERE person_id = %s", (person_id,))
