@@ -34,7 +34,7 @@ class Database:
 					(limit,),
 				)
 				return [dict(row) for row in cursor.fetchall()]
-
+			
 	def get_notice_count(self, filters):
 		where_sql, params = self._build_where(filters)
 		sql = f"""
